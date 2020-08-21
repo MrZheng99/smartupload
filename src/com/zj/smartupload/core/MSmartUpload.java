@@ -4,8 +4,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.jsp.PageContext;
@@ -27,6 +25,8 @@ public class MSmartUpload {
 	/***********/
 	private final int DEFAULT_SIZE = 16;
 	private int REAL_SIZE = 0;
+	private int BOUND_START_REAL_SIZE = 0;
+
 	// 输入流
 	private byte[] input;
 	// 存放数据部分Data开始的位置
@@ -34,7 +34,7 @@ public class MSmartUpload {
 	// 存储头部和数据部分奇数为头 偶数是数据
 	private MFile[] arrayFile;
 	// 获取所有分隔符boundary起始位置
-	private List<Integer> listBoundaryStart;
+	private int[] listBoundaryStart;
 
 	/**
 	 * return a instance of MSmartUpload
@@ -131,14 +131,14 @@ public class MSmartUpload {
 		arrayDataStart = new int[DEFAULT_SIZE];
 		int start = 0;
 		int end = 0;
-		for (int i = 0, len = listBoundaryStart.size() - 1; i < len; i++) {
+		for (int i = 0, len = listBoundaryStart.length - 1; i < len; i++) {
 			// 获取数据的起始位置和结束位置
-			start = listBoundaryStart.get(i);
-			end = listBoundaryStart.get(i + 1);
+			start = listBoundaryStart[i];
+			end = listBoundaryStart[i + 1];
 			for (int j = start; j < end; j++) {
 				if (input[j] == 13 && input[j + 2] == 13) {
 					if (REAL_SIZE++ >= DEFAULT_SIZE) {
-						resizeArray();
+						arrayDataStart = resizeArray(arrayDataStart);
 					}
 					arrayDataStart[i] = j + 4;
 					break;
@@ -157,7 +157,7 @@ public class MSmartUpload {
 		String contentDisp = null;
 		boolean isFile = false;
 		for (int i = 0; i < REAL_SIZE; i++) {
-			int boundaryStart = listBoundaryStart.get(i);
+			int boundaryStart = listBoundaryStart[i];
 			int dataStart = arrayDataStart[i];
 			String head = new String(input, boundaryStart + boundaryLength,
 					dataStart - (boundaryStart + boundaryLength));
@@ -194,8 +194,8 @@ public class MSmartUpload {
 			} else {
 				isFile = false;
 			}
-			byte[] data = new byte[listBoundaryStart.get(i + 1) - dataStart - 2];
-			System.arraycopy(input, dataStart, data, 0, listBoundaryStart.get(i + 1) - dataStart - 2);
+			byte[] data = new byte[listBoundaryStart[i + 1] - dataStart - 2];
+			System.arraycopy(input, dataStart, data, 0, listBoundaryStart[i + 1] - dataStart - 2);
 //			System.out.println("---" + new String(data) + "**");
 //			System.out.println(fieldName + "-" + fileName + "-" + contentType + "-" + contentDisp + "-" + isFile + "-"
 //					+ data.length);
@@ -210,10 +210,10 @@ public class MSmartUpload {
 	/**
 	 * 扩容
 	 */
-	private void resizeArray() {
+	private int[] resizeArray(int[] src) {
 		int[] copy = new int[REAL_SIZE << 2];
-		System.arraycopy(arrayDataStart, 0, copy, 0, REAL_SIZE);
-		arrayDataStart = copy;
+		System.arraycopy(src, 0, copy, 0, REAL_SIZE);
+		return copy;
 	}
 
 	/**
@@ -227,11 +227,14 @@ public class MSmartUpload {
 		int[] next = getNext(pattern, patternLength);
 		int j = 0;
 		int i = 0;
-		listBoundaryStart = new ArrayList<Integer>();
+		listBoundaryStart = new int[DEFAULT_SIZE];
 		while (i < targetLength) {
 			if (j == patternLength) {
-				listBoundaryStart.add(i - j);
+				listBoundaryStart[BOUND_START_REAL_SIZE++] = (i - j);
 				j = 0;
+				if (BOUND_START_REAL_SIZE >= DEFAULT_SIZE) {
+					listBoundaryStart = resizeArray(listBoundaryStart);
+				}
 			}
 			if (j == -1 || j == 0 || target[i] == pattern[j]) {
 				i++;
