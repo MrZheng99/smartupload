@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>学生信息添加</title>
+    <style type="text/css">
+        * {
+            font-size: 14px;
+        }
+        
+        li {
+            list-style-type: none;
+            margin-top: 10px;
+        }
+    </style>
+    <script type="text/javascript" src="ajax.js"></script>
+    <script type="text/javascript" src="jquery.js"></script>
+    <script type="text/javascript">
+        $(function() {
+            // 	$.get("cls",{op:"findAll"},data=>{
+            // 		$("#cid").append($(data));
+            // 	},"text")
+            $.get("cls", {
+                op: "findAll"
+            }, data => {
+                let str = "";
+                $.each(data, function(index, item) {
+                    str += "<option value='" + item.cid + "'>" + item.cname + "</option>";
+                });
+                console.log(str);
+                $("#cid").append($(str));
+
+            }, "json")
+        })
+
+        function add() {
+            if ($("#cid").val() == "0" || $.trim($("#sname").val()) == "") {
+                alert("不能为空");
+            } else {
+
+                $.ajaxFileUpload({
+                    url: "stu?op=addStudent",
+                    secureuri: false,
+                    fileElementId: "photo",
+                    dataType:"json",
+                    data: {
+                        sname: $.trim($("#sname").val()),
+                        age: $.trim($("#age").val()),
+                        cid: $.trim($("#cid").val()),
+                        tel: $.trim($("#tel").val()),
+                        address: $.trim($("#address").val()),
+                        birth: $.trim($("#birth").val())
+                    },
+                    success: function(data, status) {
+                    	console.log(typeof(data.success));
+                        if (data.success) {
+                            alert("添加成功");
+                            $("#myform").reset();
+                            $("#preDiv").html("");
+                        } else {
+                            alert("添加失败");
+                        }
+                    }
+                })
+                return false;
+            }
+        }
+    </script>
+    <script type="text/javascript" src="showpic.js"></script>
+    <script type="text/javascript" src="ajaxfileupload.js"></script>
+
+</head>
+
+<body>
+    <!--     <form action="" id="myform" onsubmit="return add()"> -->
+    <!--         <ul> -->
+    <!--             <li><label>班级： <select id="cid"> -->
+    <!-- 						<option value="0">--请选择--</option> -->
+    <!-- 				</select> -->
+    <!-- 			</label></li> -->
+    <!--             <li><label>姓名：<input type="text" id="sname" /></label></li> -->
+    <!--             <li><label>年龄：<input type="number" id="age" /></label></li> -->
+    <!--             <li><label>联系方式：<input type="tel" id="tel" /></label></li> -->
+    <!--             <li><label>住址：<input type="text" id="address" /></label></li> -->
+    <!--             <li><label>生日：<input type="date" id="birth" /></label></li> -->
+    <!--             <li><input type="submit" value="添加" /> -->
+    <!--         </ul> -->
+    <!--     </form> -->
+    <!-- 上传文件 -->
+    <form action="" id="myform" method="post" onsubmit="return add()">
+        <ul>
+            <li><label>班级： <select id="cid" name="cid">
+						<option value="0">--请选择--</option>
+				</select>
+			</label></li>
+            <li><label>姓名：<input type="text" id="sname" name="sname" /></label></li>
+            <li><label>年龄：<input type="number" id="age" name="age" /></label></li>
+            <li><label>联系方式：<input type="tel" id="tel" name="tel" /></label></li>
+            <li><label>住址：<input type="text" id="address"
+					name="address" /></label></li>
+            <li><label>生日：<input type="date" id="birth" name="birth" /></label></li>
+            <li><label>图片：<input type="file" multiple="multiple"
+					id="photo" name="photo"
+					onchange="setImagePreviews(this,'preDiv')" /></label></li>
+            <li>
+                <div id="preDiv"></div>
+            </li>
+            <li><input type="submit" value="添加" />
+        </ul>
+    </form>
+    <a href="show.html">浏览所有学生</a>
+</body>
+
+</html>

@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Insert title here</title>
+    <style>
+        * {
+            padding: 0px;
+            margin: 0px auto;
+        }
+        
+        body {
+            text-align: center;
+        }
+        
+        #pagination {
+            margin-top: 20px;
+        }
+        
+        #pagination a {
+            padding: 4px 8px;
+            margin: 4px;
+            border: 1px solid #aaaadd;
+            text-decoration: none;
+            color: #006699;
+            display: inline-block;
+        }
+        
+        #pagination a:hover {
+            border: 1px solid #FF0000;
+            color: #000;
+        }
+        
+        #pagination .current {
+            font-weight: bold;
+            background-color: red;
+            color: #FFF;
+        }
+        
+        #pagination .show {
+            display: none;
+        }
+        tbody img{
+        	width: 120px;
+        	height:120px;
+        }
+    </style>
+</head>
+
+<body>
+    <table id="mtable" border="1px" cellpadding="0px" cellspacing="0px" align="center" width="90%" rules="all">
+        <caption>学生信息</caption>
+        <thead>
+            <tr>
+                <th>学号</th>
+                <th>姓名</th>
+                <th>班级</th>
+                <th>年龄</th>
+                <th>住址</th>
+                <th>生日</th>
+                <th>头像</th>
+
+            </tr>
+        </thead>
+        <tbody id="stuinfos" align="center">
+
+        </tbody>
+    </table>
+    <div id="pagination"></div>
+</body>
+<script type="text/javascript" src="jquery.js"></script>
+<script type="text/javascript">
+    var page = 1;
+    var rows = 3;
+    $(function() {
+        // 发送请求获取第一页总记录数{}
+        $.post("stu", {
+            op: "finds",
+            page: page,
+            rows: rows
+        }, data => {
+            console.log(data);
+            total = Math.ceil(data.total / rows);
+            $("#pagination").showPage(total);
+            showInfo(data.rows);
+          
+        }, "json");
+        
+    })
+
+    function showInfo(data) {
+        let str = "";
+        $.each(data, function(index, item) {
+            str += "<tr><td>" + item.sid + "</td>" + "<td>" + item.sname + "</td><td>"  + item.cname + "</td><td>"  + item.age + "</td><td>" + item.address + "</td><td>" + item.birth + "</td>";
+            if (item.photo == null || item.photo == "null") {
+                str += "<td><img src='images/zanwu.jpg'/></td></tr>";
+            } else {
+            	let photos =item.photo.split(",");
+            	str+="<td>"
+            	console.log(photos);
+            	for(let i=0,len=photos.length;i<len;i++){
+                    str += "<img src='" + photos[i] + "'/>";
+
+            	}
+            	str+="</td></tr>";
+            }
+
+        })
+    //    $("#stuinfos tr").remove();
+       // $("#stuinfos").append($(str));
+  
+        $("#stuinfos").html("").append($(str));
+    }
+    function findByPage(flag){
+    	let page = flag;
+    	console.log($(this).text());
+    	$.post("stu", {
+            op: "findByPage",
+            page: page,
+            rows: rows
+        }, data => {
+            console.log(data);
+            total = Math.ceil(data.total / rows);
+            showInfo(data.rows);
+
+        }, "json");
+    }
+</script>
+<script type="text/javascript">
+    $.fn.showPage = function(count) {
+        var str = "<a href='javascript:void(0)' class='current'>1</a>";
+        for (var i = 2; i <= count; i++) {
+            str += "<a href='javascript:void(0)'>" + i + "</a>";
+        }
+
+        var currentObj = $(this);
+        currentObj.append($(str));
+
+        var objs = currentObj.children("a");
+        if (count > 10) {
+            objs.slice(5, count - 5).addClass("show");
+            objs.eq(4).after($("<span>...</span>"));
+        }
+        objs.unbind("click");
+        objs.click(function() {
+            let obj = this;
+            $("#pagination>a").removeClass("current"); //移除超链接上的选中样式
+            //当前对象选中
+            let num = $(obj).index() + 1;
+            findByPage(num,obj);//调用外部函数按页查询
+
+            $(obj).addClass("current"); //给当前点击的这个页码添加样式
+            if (num < 5 || num > pageCount - 5) {
+                return;
+            }
+            if (pageCount >= 10) {
+                $("#pagination>span").remove(); //移除这个分页栏中的span标签
+                var nextObj = $(obj).nextAll(); //获取当前点击的这个页码后面的所有页码对象
+                var nextSize = nextObj.length;
+                if (num >= 5) {
+                    nextObj.slice(2, nextSize - 5).addClass("show");
+                    nextObj.slice(0, 2).removeClass("show");
+                    var preObj = $(obj).prevAll();
+                    var prvSize = preObj.length;
+                    preObj.removeClass("show");
+                    if (prvSize >= 8) {
+                        preObj.slice(2, num - 6).addClass("show");
+                        //补上 ...
+                        if ($(obj).prevAll(".show").length > 0) { //说明当前这个页码前面有隐藏的页码
+                            $(obj).prev().prev().before($("<span>...</span>"));
+                        }
+                        if ($(obj).nextAll(".show").length > 0) { //说明当前这个页码后面有隐藏的页码
+                            $(obj).next().next().after($("<span>...</span>"));
+                        }
+                    }
+                }
+
+            }
+        })
+    }
+</script>
+
+</html>
